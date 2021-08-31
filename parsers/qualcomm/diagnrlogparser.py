@@ -137,9 +137,9 @@ class DiagNrLogParser:
         msg_hdr = b''
         msg_content = b''
 
-        pkt_ver = struct.unpack('<I', pkt[0:4])
+        pkt_ver = struct.unpack('<I', pkt[0:4])[0]
 
-        if pkt_ver in (0x09): # Version 9
+        if pkt_ver in (0x09, ): # Version 9
             # 09 00 00 00 | 0f 90 | 01 | c6 02 | c0 ac 05 00 | 00 00 00 00 | 08 | 00 00 00 00 | 09 00 | 00 01 01 06 c6 5c fb d6 40
             msg_hdr = pkt[0:24] # 24 bytes
             msg_content = pkt[24:] # Rest of packet
@@ -151,14 +151,14 @@ class DiagNrLogParser:
             nr_pdu_id = msg_hdr[6]
             nr_pdu_len = msg_hdr[7]
 
-        if pkt_ver in (0x09):
+        if pkt_ver in (0x09, ):
             # RRC Packet v9
             rrc_type_map = {
-                # 1: unknown
-                # 8: UL DCCH
-                # 9: RRCReconfiguration
-                # 10: RRCReconfigurationComplete
-                # 25: nr-RadioBearerConfig[1-2]-r15
+                1: 'unknown',
+                8: 'UL DCCH',
+                9: 'RRCReconfiguration',
+                10: 'RRCReconfigurationComplete',
+                25: 'nr-RadioBearerConfig',
             }
 
         ts_sec = calendar.timegm(pkt_ts.timetuple())
@@ -169,14 +169,16 @@ class DiagNrLogParser:
             self.parent.logger.log(logging.DEBUG, util.xxd(pkt))
             return 
 
-        nr_pdu_id_gsmtap = rrc_type_map[nr_pdu_id]
+        nr_pdu_id_string = rrc_type_map[nr_pdu_id]
+        self.parent.logger.log(logging.WARNING, "NR RRC OTA Packet: Type: %s" % (nr_pdu_id_string))
+        self.parent.logger.log(logging.WARNING, "Body: %s" % (util.xxd_oneline(msg_content)))
 
         # TODO: GSMTAP header for 5GNR
 
     def parse_nr_scell(self, pkt_ts, pkt, radio_id):
-        pkt_ver = struct.unpack('<I', pkt[0:4])
+        pkt_ver = struct.unpack('<I', pkt[0:4])[0]
 
-        if pkt_ver in (0x03): # Version 3
+        if pkt_ver in (0x03, ): # Version 3
             # 03 00 00 00 | 50 01 | c0 ac 05 00 | 9a 00 00 3f
             msg = struct.unpack('<IHIBBH', pkt) # Version, PCI, NR-ARFCN, unknown yet
 
